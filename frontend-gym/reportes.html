@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reportes | Gym</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+    }
+    .table-wrap table {
+      min-width: 980px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .table-wrap th,
+    .table-wrap td {
+      white-space: nowrap;
+    }
+    .fake-scroll {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .fake-scroll > div {
+      height: 10px;
+      width: 38%;
+      background: #9ca3af;
+      border-radius: 9999px;
+    }
+    /* Evitar scroll horizontal global (permitir solo en contenedores específicos) */
+    body { overflow-x: hidden; }
+
+    /* Forzar canvases responsivos */
+    canvas { max-width: 100% !important; }
+
+  </style>
+</head>
+<body class="min-h-screen bg-gray-100 flex">
+
+  <!-- OVERLAY (solo móvil) -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+  <!-- SIDEBAR (desktop visible / móvil hamburguesa) -->
+  <aside id="sidebar"
+    class="w-64 bg-slate-900 text-white
+           fixed md:static inset-y-0 left-0 z-50
+           transform -translate-x-full md:translate-x-0
+           transition-transform duration-300 ease-in-out">
+
+    <div class="p-4 bg-slate-950 text-lg font-bold">
+      Sistema GYM
+    </div>
+
+    <nav class="px-2 py-4 text-sm space-y-1">
+      <a href="dashboard.html" data-module="dashboard" class="block px-3 py-2 rounded hover:bg-slate-700">🏠 Inicio</a>
+      
+      <!-- CLIENTES (DESPLEGABLE) -->
+      <button id="clientesToggle" type="button" aria-controls="clientesSubmenu" aria-expanded="false"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-700">
+        <span data-module="clientes" class="flex-1 flex items-center gap-2">👥 Gestionar Clientes</span>
+        <span id="clientesChevron" class="transition-transform duration-200">▾</span>
+      </button>
+
+      <div id="clientesSubmenu" class="mt-1 space-y-1 pl-6 hidden">
+        <a href="clientes.html" data-module="clientes"
+          class="block px-3 py-2 rounded hover:bg-slate-700">
+          Listar/Agregar Clientes
+        </a>
+        <span
+          class="block px-3 py-2 rounded text-slate-300 cursor-not-allowed opacity-80"
+          title="Abre el detalle desde Acciones en la tabla de clientes">
+          Detalle de cliente
+        </span>
+        <a href="clientes_vencimientos.html" data-module="clientes_vencimientos"
+          class="block px-3 py-2 rounded hover:bg-slate-700">
+          Vencimientos
+        </a>
+      </div>
+
+      <a href="membresias.html" data-module="membresias" class="block px-3 py-2 rounded hover:bg-slate-700">💳 Membresías</a>
+
+      <a href="usuarios.html" data-module="usuarios" class="block px-3 py-2 rounded hover:bg-slate-700">⚙️ Usuarios</a>
+      <a href="reportes.html" data-module="reportes" class="block px-3 py-2 rounded bg-blue-600">📊 Reportes</a>
+    </nav>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+
+    <!-- TOPBAR -->
+<nav class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b">
+  <div class="w-full flex items-center justify-between px-4 py-3 gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <button
+        id="menuBtn"
+        type="button"
+        class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded hover:bg-gray-100"
+        aria-label="Abrir menú">☰</button>
+
+      <!-- ✅ si el nombre/rol es largo, no rompe el header -->
+      <span id="currentUserDisplay"
+            class="text-sm text-gray-700 truncate max-w-[60vw] md:max-w-none"></span>
+    </div>
+
+    <button
+      id="logoutBtn"
+      type="button"
+      class="shrink-0 w-auto inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 md:py-1 rounded text-sm">
+      Cerrar sesión
+    </button>
+  </div>
+</nav>
+
+
+    <main class="w-full pt-2">
+      <div class="max-w-6xl mx-auto p-4 sm:p-6">
+
+      <!-- Filtros -->
+      <div class="bg-white p-4 rounded-xl shadow mb-6">
+        <h2 class="font-semibold mb-3">Filtros</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input id="from" type="date" class="border rounded px-3 py-2 text-sm">
+          <input id="to" type="date" class="border rounded px-3 py-2 text-sm">
+          <select id="group" class="border rounded px-3 py-2 text-sm">
+            <option value="day">Por día</option>
+            <option value="month">Por mes</option>
+          </select>
+          <select id="chartType" class="border rounded px-3 py-2 text-sm" title="Tipo de gráfico">
+            <option value="bar">Barras</option>
+            <option value="pie">Circular</option>
+          </select>
+        </div>
+
+        <p id="repError" class="hidden mt-3 text-sm text-red-600"></p>
+      </div>
+
+      <!-- Reporte de Clientes + Ingresos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section class="bg-white p-4 rounded-xl shadow">
+          <div class="flex justify-between items-center">
+            <h3 class="font-semibold">Clientes registrados</h3>
+            <button type="button" id="exportClientes" class="text-sm px-3 py-1 rounded bg-gray-200">Exportar CSV</button>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">Total: <span id="totalClientes">-</span></p>
+          <canvas id="chartClientes" height="120"></canvas>
+        </section>
+
+        <section class="bg-white p-4 rounded-xl shadow">
+          <div class="flex justify-between items-center">
+            <h3 class="font-semibold">Ingresos</h3>
+            <button type="button" id="exportIngresos" class="text-sm px-3 py-1 rounded bg-gray-200">Exportar CSV</button>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">Total: $ <span id="totalIngresos">-</span></p>
+          <canvas id="chartIngresos" height="120"></canvas>
+        </section>
+      </div>
+
+      <!-- Filtrar Pagos por Usuario -->
+      <section class="bg-white p-4 rounded-xl shadow mt-6">
+        <h3 class="font-semibold mb-3">Filtrar Pagos por Usuario</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <select id="pu_user" class="border rounded px-3 py-2 text-sm">
+            <option value="">Seleccionar usuario...</option>
+          </select>
+
+          <input id="pu_from" type="date" class="border rounded px-3 py-2 text-sm">
+          <input id="pu_to" type="date" class="border rounded px-3 py-2 text-sm">
+
+          <button
+            type="button"
+            id="pu_ver"
+            class="text-sm px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+            Ver
+          </button>
+        </div>
+
+        <div class="flex gap-2 mt-3">
+          <button
+            type="button"
+            id="pu_export"
+            class="text-sm px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">
+            Exportar CSV
+          </button>
+        </div>
+
+        <p id="pu_error" class="hidden mt-3 text-sm text-red-600"></p>
+
+        <div class="mt-4 text-sm text-gray-600">
+          Registros: <b id="pu_total">-</b>
+          <span class="ml-4">Total $: <b id="pu_total_monto">-</b></span>
+        </div>
+
+        <!-- ✅ RESPONSIVE FIX: solo scroll horizontal, no rompe layout -->
+        <div class="overflow-x-auto mt-3 border rounded-lg">
+          <table class="min-w-max w-full text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-left px-3 py-2 border-b">Cliente</th>
+                <th class="text-left px-3 py-2 border-b">Cédula</th>
+                <th class="text-left px-3 py-2 border-b">Correo</th>
+                <th class="text-left px-3 py-2 border-b">Membresía</th>
+                <th class="text-left px-3 py-2 border-b">Fecha</th>
+                <th class="text-left px-3 py-2 border-b">Tipo pago</th>
+                <th class="text-left px-3 py-2 border-b">Monto</th>
+              </tr>
+            </thead>
+            <tbody id="pu_tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="js/config.js"></script>
+  <script src="js/loader.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/auth_guard.js"></script>
+  <script>guardPage(['admin', 'recepcionista']);</script>
+  <script src="js/reportes.js"></script>
+
+  <!-- JS menú hamburguesa -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuBtn  = document.getElementById('menuBtn');
+
+    if (!sidebar || !overlay) return;
+    const isMobile = () => window.innerWidth < 768;
+
+    function openMenu() {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeMenu() {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    // ✅ Estado seguro al cargar o al volver (bfcache)
+    function syncLayoutState() {
+      if (!isMobile()) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    menuBtn?.addEventListener('click', () => {
+      const isClosed = sidebar.classList.contains('-translate-x-full');
+      isClosed ? openMenu() : closeMenu();
+    });
+
+    overlay?.addEventListener('click', closeMenu);
+
+    sidebar.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (isMobile()) closeMenu();
+      });
+    });
+
+    window.addEventListener('resize', syncLayoutState);
+    window.addEventListener('pageshow', syncLayoutState);
+
+    // Submenu clientes
+    const clientesToggle  = document.getElementById('clientesToggle');
+    const clientesSubmenu = document.getElementById('clientesSubmenu');
+    const clientesChevron = document.getElementById('clientesChevron');
+
+    clientesToggle?.addEventListener('click', () => {
+      const isExpanded = clientesToggle.getAttribute('aria-expanded') === 'true';
+      clientesToggle.setAttribute('aria-expanded', String(!isExpanded));
+      clientesSubmenu?.classList.toggle('hidden');
+      clientesChevron?.classList.toggle('rotate-180');
+    });
+
+    syncLayoutState();
+  });
+</script>
+
+
+</body>
+</html>

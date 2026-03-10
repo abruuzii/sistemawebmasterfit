@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clientes por vencer / vencidos - Gym</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex">
+
+  <!-- OVERLAY (solo móvil) -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar"
+    class="w-64 bg-slate-900 text-white
+           fixed md:static inset-y-0 left-0 z-50
+           transform -translate-x-full md:translate-x-0
+           transition-transform duration-300 ease-in-out">
+
+    <div class="p-4 bg-slate-950 text-lg font-bold">
+      Sistema GYM
+    </div>
+
+    <nav class="px-2 py-4 text-sm space-y-1">
+
+      <!-- INICIO -->
+      <a href="dashboard.html" data-module="dashboard" class="block px-3 py-2 rounded hover:bg-slate-700">🏠 Inicio</a>
+
+      <!-- CLIENTES (DESPLEGABLE) -->
+      <button id="clientesToggle" type="button" aria-controls="clientesSubmenu" aria-expanded="true"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-700">
+        <span data-module="clientes" class="flex-1 flex items-center gap-2">👥 Gestionar Clientes</span>
+        <span id="clientesChevron" class="transition-transform duration-200 rotate-180">▾</span>
+      </button>
+
+      <div id="clientesSubmenu" class="mt-1 space-y-1 pl-6">
+        <a href="clientes.html" data-module="clientes"
+          class="block px-3 py-2 rounded hover:bg-slate-700">
+          Listar/Agregar Clientes
+        </a>
+        <!-- ACTIVO: esta página -->
+        <span
+          class="block px-3 py-2 rounded text-slate-300 cursor-not-allowed opacity-80"
+          title="Abre el detalle desde Acciones en la tabla de clientes">
+          Detalle de cliente
+        </span>
+        <span data-module="clientes_vencimientos"
+          class="block px-3 py-2 rounded bg-slate-800 text-white cursor-default">
+          Vencimientos
+        </span>
+      </div>
+
+      <!-- MEMBRESIAS -->
+      <a href="membresias.html" data-module="membresias" class="block px-3 py-2 rounded hover:bg-slate-700">💳 Membresías</a>
+
+      <!-- USUARIOS -->
+      <a href="usuarios.html" data-module="usuarios" class="block px-3 py-2 rounded hover:bg-slate-700">⚙️ Usuarios</a>
+
+      <!-- REPORTES -->
+      <a href="reportes.html" data-module="reportes" class="px-3 py-2 rounded hover:bg-slate-700">📈 Reportes</a>
+
+    </nav>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <div class="flex-1 flex flex-col">
+
+    <!-- TOPBAR -->
+    <nav class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b">
+      <div class="w-full flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3">
+        <div class="flex items-center gap-3">
+          <button id="menuBtn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded hover:bg-gray-100" aria-label="Abrir menú">☰</button>
+          <h1 class="text-xl font-bold"></h1>
+          <span id="currentUserDisplay" class="text-sm text-gray-700"></span>
+        </div>
+
+        <div class="flex items-center">
+          <button id="logoutBtn" class="w-auto inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 md:py-1 rounded text-sm">Cerrar sesión</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="w-full max-w-none px-4 py-8 pt-2">
+
+      <!-- Mensaje de error -->
+      <div id="errorBox" class="hidden mb-4 p-3 rounded bg-red-100 text-red-700 text-sm"></div>
+
+      <!-- Tabs -->
+      <div class="mb-4 flex flex-col sm:flex-row border-b gap-2">
+      <button
+        id="tabPorVencer"
+        class="w-full sm:w-auto px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600"
+      >
+        Por vencer
+      </button>
+      <button
+        id="tabVencidos"
+        class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+      >
+        Vencidos
+      </button>
+    </div>
+
+    <!-- Tabla Por Vencer -->
+    <div id="panelPorVencer">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">Clientes cuya membresía vence pronto</h2>
+        <span id="countPorVencer" class="text-sm text-gray-500"></span>
+      </div>
+      <style>
+        @media (max-width: 639px) {
+          /* ocultar columnas menos importantes en móvil (correo, membresía, pagos, fin mensualidad) */
+          .hide-sm-columns th:nth-child(3), .hide-sm-columns td:nth-child(3),
+          .hide-sm-columns th:nth-child(4), .hide-sm-columns td:nth-child(4),
+          .hide-sm-columns th:nth-child(5), .hide-sm-columns td:nth-child(5),
+          .hide-sm-columns th:nth-child(6), .hide-sm-columns td:nth-child(6) {
+            display: none;
+          }
+          .hide-sm-columns th, .hide-sm-columns td { padding-left: 0.5rem; padding-right: 0.5rem; }
+          .hide-sm-columns td:first-child { white-space: normal; }
+        }
+      </style>
+
+      <div class="overflow-x-auto bg-white rounded shadow">
+        <table class="min-w-full text-sm hide-sm-columns">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Cliente</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Cédula</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Correo</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Membresía</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Último pago</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Fin mensualidad</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Días restantes</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPorVencer"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tabla Vencidos -->
+    <div id="panelVencidos" class="hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">Clientes con membresía vencida</h2>
+        <span id="countVencidos" class="text-sm text-gray-500"></span>
+      </div>
+      <div class="overflow-x-auto bg-white rounded shadow">
+        <table class="min-w-full text-sm hide-sm-columns">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Cliente</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Cédula</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Correo</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Membresía</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Último pago</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Fin mensualidad</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Días vencido</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyVencidos"></tbody>
+        </table>
+      </div>
+    </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="js/config.js"></script>
+  <script src="js/loader.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/auth_guard.js"></script>
+  <script>guardPage(['admin','recepcionista']);</script>
+  <script src="js/clientes_vencimientos.js"></script>
+
+  <!-- JS menú hamburguesa y toggle de submenú -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuBtn = document.getElementById('menuBtn');
+
+    function openMenu() {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeMenu() {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    menuBtn.addEventListener('click', () => {
+      const isClosed = sidebar.classList.contains('-translate-x-full');
+      isClosed ? openMenu() : closeMenu();
+    });
+
+    overlay.addEventListener('click', closeMenu);
+
+    // cerrar al tocar cualquier link en móvil
+    sidebar.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth < 768) closeMenu();
+      });
+    });
+
+    // ajustar estado cuando cambian tamaño de ventana
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) {
+        overlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        sidebar.classList.remove('-translate-x-full');
+      } else {
+        // en móvil dejamos el sidebar oculto por defecto
+        sidebar.classList.add('-translate-x-full');
+      }
+    });
+
+    // Forzar cálculo inicial de layout (igual que en clientes.html)
+    window.dispatchEvent(new Event('resize'));
+
+    // Toggle del submenú Clientes (si existe)
+    const clientesToggle = document.getElementById('clientesToggle');
+    const clientesSubmenu = document.getElementById('clientesSubmenu');
+    const clientesChevron = document.getElementById('clientesChevron');
+
+    if (clientesToggle) {
+      clientesToggle.addEventListener('click', () => {
+        const isExpanded = clientesToggle.getAttribute('aria-expanded') === 'true';
+        clientesToggle.setAttribute('aria-expanded', !isExpanded);
+        clientesSubmenu.classList.toggle('hidden');
+        clientesChevron.classList.toggle('rotate-180');
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detalle de cliente | Gym</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase SDKs (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-storage-compat.js"></script>
+//Configurar api de firebase
+  <script>
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: "",
+      measurementId: ""
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+  </script>
+</head>
+
+<body class="min-h-screen bg-gray-100 flex">
+
+  <!-- OVERLAY (solo móvil) -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar"
+    class="w-64 bg-slate-900 text-white
+           fixed md:static inset-y-0 left-0 z-50
+           transform -translate-x-full md:translate-x-0
+           transition-transform duration-300 ease-in-out">
+
+    <div class="p-4 bg-slate-950 text-lg font-bold">
+      Sistema GYM
+    </div>
+
+    <nav class="px-2 py-4 text-sm space-y-1">
+      <a href="dashboard.html" data-module="dashboard" class="block px-3 py-2 rounded hover:bg-slate-700">🏠 Inicio</a>
+      
+      <button id="clientesToggle" type="button" aria-controls="clientesSubmenu" aria-expanded="true"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-700">
+        <span data-module="clientes" class="flex-1 flex items-center gap-2">👥 Gestionar Clientes</span>
+        <span id="clientesChevron" class="transition-transform duration-200 rotate-180">▾</span>
+      </button>
+
+      <div id="clientesSubmenu" class="mt-1 space-y-1 pl-6">
+        <a href="clientes.html" data-module="clientes" class="block px-3 py-2 rounded hover:bg-slate-700">Listar/Agregar Clientes</a>
+        <span class="block px-3 py-2 rounded bg-slate-800 text-white cursor-default" data-module="cliente_detalle">
+          Detalle de cliente
+        </span>
+        <a href="clientes_vencimientos.html" data-module="clientes_vencimientos" class="block px-3 py-2 rounded hover:bg-slate-700">Vencimientos</a>
+      </div>
+
+      <a href="membresias.html" data-module="membresias" class="block px-3 py-2 rounded hover:bg-slate-700">💳 Membresías</a>
+
+      <a href="usuarios.html" data-module="usuarios" class="block px-3 py-2 rounded hover:bg-slate-700">⚙️ Usuarios</a>
+      <a href="reportes.html" data-module="reportes" class="px-3 py-2 rounded hover:bg-slate-700">📈 Reportes</a>
+    </nav>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <div class="flex-1 flex flex-col md:ml-0">
+
+    <!-- TOPBAR -->
+    <nav class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b">
+      <div class="w-full flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-3">
+          <button id="menuBtn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded hover:bg-gray-100" aria-label="Abrir menú">☰</button>
+          <span class="text-sm font-semibold text-gray-900" id="clienteTitulo">Detalle del cliente: </span>
+          <span id="currentUserDisplay" class="text-sm text-gray-700"></span>
+        </div>
+
+        <div class="flex items-center">
+          <button id="logoutBtn" class="w-auto inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 md:py-1 rounded text-sm">Cerrar sesión</button>
+        </div>
+      </div>
+    </nav>
+
+<main class="max-w-6xl mx-auto px-4 py-8 w-full pt-2">
+
+  <!-- Error -->
+  <div id="detalleError" class="hidden mb-4 bg-red-100 text-red-700 px-4 py-2 rounded"></div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Columna izquierda: información del cliente + historial de pesos -->
+    <div class="md:col-span-1 space-y-4">
+      <section class="bg-white rounded-xl shadow p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+          <h2 class="text-lg font-semibold">Información del cliente</h2>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button id="btnEditarCliente" class="w-full sm:w-auto text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">✏️ Editar datos</button>
+            <button id="btnEliminarCliente" class="w-full sm:w-auto text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">🗑️ Eliminar</button>
+          </div>
+        </div>
+
+        <div id="infoLectura" class="space-y-1 text-sm">
+          <p><span class="font-semibold">Nombre:</span> <span id="clienteNombre">-</span></p>
+          <p><span class="font-semibold">Cédula:</span> <span id="clienteCedula">-</span></p>
+          <p><span class="font-semibold">Correo:</span> <span id="clienteCorreo">-</span></p>
+          <p><span class="font-semibold">Teléfono:</span> <span id="clienteTelefono">-</span></p>
+          <p><span class="font-semibold">Dirección:</span> <span id="clienteDireccion">-</span></p>
+          <p><span class="font-semibold">Fecha nacimiento:</span> <span id="clienteFechaNac">-</span></p>
+          <p><span class="font-semibold">Edad:</span> <span id="clienteEdad">-</span></p>
+
+          <p><span class="font-semibold">Peso:</span> <span id="clientePeso">-</span></p>
+          <p><span class="font-semibold">Altura:</span> <span id="clienteAltura">-</span></p>
+          <p><span class="font-semibold">Condición médica:</span> <span id="clienteCondicion">-</span></p>
+          <p><span class="font-semibold">Estado:</span> <span id="clienteEstado" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">-</span></p>
+          <p><span class="font-semibold"> Última Membresía:</span> <span id="clienteMembresia">-</span></p>
+          <div class="text-sm">Fin de membresía: <span id="clienteFechaFin">-</span></div>
+          <div class="text-sm">Días restantes: <span id="clienteDiasRestantes">-</span></div>
+        </div>
+
+        <form id="formEditarCliente" class="mt-4 space-y-3 hidden">
+          <p class="text-xs text-gray-500 mb-1">Edita solo los campos necesarios y guarda los cambios.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium mb-1" for="editTelefono">Teléfono</label>
+              <input id="editTelefono" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1" for="editPeso">Peso (kg)</label>
+              <input id="editPeso" type="number" step="0.01" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1" for="editPesoFecha">Fecha del registro (peso)</label>
+              <input id="editPesoFecha" type="date" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1" for="editAltura">Altura (m)</label>
+              <input id="editAltura" type="number" step="0.01" class="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium mb-1" for="editDireccion">Dirección</label>
+            <input id="editDireccion" type="text" class="w-full border rounded px-3 py-2 text-sm" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium mb-1" for="editCondicion">Condición médica</label>
+            <textarea id="editCondicion" rows="2" class="w-full border rounded px-3 py-2 text-sm"></textarea>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" id="btnCancelarEdicion" class="px-3 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-100">Cancelar</button>
+            <button type="submit" id="btnGuardarEdicion" class="px-4 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">Guardar cambios</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-gray-50 border rounded-lg p-3">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-sm font-semibold">Historial de pesos</h3>
+          <span id="pesosCount" class="text-sm text-gray-500"></span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-white">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peso (kg)</th>
+              </tr>
+            </thead>
+            <tbody id="pesosBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Columna derecha: pagos, PRs y tablas principales -->
+    <div class="md:col-span-2 space-y-4">
+      <section class="bg-white rounded-xl shadow p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+          <div class="flex items-center gap-3">
+            <h2 class="text-lg font-semibold">Historial de pagos</h2>
+            <span id="pagosCount" class="text-sm text-gray-500"></span>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <button id="togglePagoFormBtn" type="button" class="w-full sm:w-auto px-3 py-2 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" aria-expanded="false" aria-controls="pagoFormWrapper">+ Registrar pago</button>
+
+            <div>
+              <h3 class="text-sm font-semibold text-gray-800 mb-3">📅 Seleccionar período para imprimir historial</h3>
+              <div class="flex flex-wrap gap-2 items-end">
+                <div class="w-full sm:w-auto">
+                  <label class="block text-xs text-gray-600 mb-1">Desde</label>
+                  <input id="printDesde" type="date" class="w-full sm:w-auto border rounded px-2 py-1 text-sm" />
+                </div>
+                <div class="w-full sm:w-auto">
+                  <label class="block text-xs text-gray-600 mb-1">Hasta</label>
+                  <input id="printHasta" type="date" class="w-full sm:w-auto border rounded px-2 py-1 text-sm" />
+                </div>
+                <button id="btnImprimirPagos" type="button" class="w-full sm:w-auto px-3 py-2 text-xs rounded bg-slate-900 text-white hover:bg-slate-800">⬇️ Descargar en PDF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="pagoFormWrapper" class="hidden border rounded-lg p-4 bg-gray-50 mb-4">
+          <form id="pagoForm" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="membresiaPago">Membresía</label>
+              <select id="membresiaPago" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400" required>
+                <option value="">Seleccione una membresía...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1" for="montoPago">Monto ($)</label>
+              <input type="number" step="0.01" id="montoPago" class="w-full border rounded px-3 py-2 text-sm bg-gray-100" readonly />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1" for="tipoPago">Tipo de pago</label>
+              <select id="tipoPago" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400" required>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+              </select>
+            </div>
+
+            <div id="comprobanteWrapper" class="hidden sm:col-span-2">
+              <label class="block text-sm font-medium mb-1" for="comprobanteArchivo">Comprobante de transferencia (imagen)</label>
+              <input type="file" id="comprobanteArchivo" accept="image/*" class="w-full text-sm" />
+              <p class="mt-1 text-xs text-gray-500">Formatos recomendados: JPG, PNG. Tamaño máximo razonable (ej. 5MB).</p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium mb-1" for="descripcionPago">Descripción (opcional)</label>
+              <textarea id="descripcionPago" rows="2" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"></textarea>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium mb-2">Fecha de inicio de la membresía</label>
+              <div class="space-y-2">
+                <div class="flex items-center">
+                  <input type="radio" id="fechaHoy" name="fechaInicioOption" value="hoy" class="mr-2" checked>
+                  <label for="fechaHoy" class="text-sm">Hoy</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" id="fechaElegir" name="fechaInicioOption" value="elegir" class="mr-2">
+                  <label for="fechaElegir" class="text-sm">Elegir fecha</label>
+                </div>
+                <div id="fechaInicioWrapper" class="hidden">
+                  <input type="date" id="fechaInicioInput" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400" max="">
+                </div>
+              </div>
+            </div>
+
+            <div class="sm:col-span-2 flex justify-end">
+              <button type="submit" id="registrarPagoBtn" class="px-4 py-2 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">Guardar pago</button>
+            </div>
+          </form>
+          <div id="pagoError" class="hidden mb-3 p-3 rounded bg-red-100 text-red-700 text-sm"></div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Pago</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inicio Membresía</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membresía</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de pagos</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registrado por</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Válido hasta</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comprobante</th>
+              </tr>
+            </thead>
+            <tbody id="pagosBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section class="bg-white rounded-xl shadow p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-semibold">Registrar PR (marca máxima)</h2>
+          </div>
+
+          <form id="prForm" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium mb-1" for="prEjercicio">Ejercicio</label>
+              <select id="prEjercicio" class="w-full border rounded px-3 py-2 text-sm" required>
+                <option value="">Seleccione...</option>
+                <option value="snatch">Snatch</option>
+                <option value="clean_and_jerk">Clean and jerk</option>
+                <option value="sentadilla">Sentadilla</option>
+                <option value="peso_muerto">Peso muerto</option>
+                <option value="press_militar">Press militar</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1" for="prFecha">Fecha</label>
+              <input id="prFecha" type="date" class="w-full border rounded px-3 py-2 text-sm" required />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1" for="prMarca">Marca máxima</label>
+              <input id="prMarca" type="number" step="0.01" min="0" class="w-full border rounded px-3 py-2 text-sm" placeholder="Ej: 80" required />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1" for="prUnidad">Unidad</label>
+              <select id="prUnidad" class="w-full border rounded px-3 py-2 text-sm" required>
+                <option value="kg">kg</option>
+                <option value="lb">lb</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2 flex justify-end pt-2">
+              <button id="prGuardarBtn" type="submit" class="px-4 py-2 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">Guardar PR</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="bg-white rounded-xl shadow p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div class="flex items-center gap-3">
+              <h2 class="text-lg font-semibold">Historial de PRs</h2>
+              <span id="prsCount" class="text-sm text-gray-500"></span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <label for="prFiltroEjercicio" class="text-xs text-gray-600">Filtrar:</label>
+              <select id="prFiltroEjercicio" class="border rounded px-2 py-1 text-xs">
+                <option value="all">Todos</option>
+                <option value="snatch">Snatch</option>
+                <option value="clean_and_jerk">Clean and jerk</option>
+                <option value="sentadilla">Sentadilla</option>
+                <option value="peso_muerto">Peso muerto</option>
+                <option value="press_militar">Press militar</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ejercicio</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca máxima</th>
+            </tr>
+          </thead>
+          <tbody id="prsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </section>
+
+</main>
+
+  <!-- JS -->
+  <script src="js/config.js"></script>
+  <script src="js/loader.js"></script>
+  <script src="js/header.js"></script>
+
+  <!-- menú hamburguesa + submenu -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuBtn = document.getElementById('menuBtn');
+
+    function openMenu() {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+    function closeMenu() {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    menuBtn?.addEventListener('click', () => {
+      const isClosed = sidebar.classList.contains('-translate-x-full');
+      isClosed ? openMenu() : closeMenu();
+    });
+    overlay?.addEventListener('click', closeMenu);
+
+    sidebar.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth < 768) closeMenu();
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) {
+        overlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        sidebar.classList.remove('-translate-x-full');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+      }
+    });
+
+    const clientesToggle = document.getElementById('clientesToggle');
+    const clientesSubmenu = document.getElementById('clientesSubmenu');
+    const clientesChevron = document.getElementById('clientesChevron');
+
+    clientesToggle?.addEventListener('click', () => {
+      const isHidden = clientesSubmenu.classList.toggle('hidden');
+      clientesToggle.setAttribute('aria-expanded', String(!isHidden));
+      clientesChevron.classList.toggle('rotate-180', !isHidden);
+      clientesChevron.classList.toggle('rotate-0', isHidden);
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/cliente_detalle.js"></script>
+
+  <!-- Modal comprobante -->
+  <div id="comprobanteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div class="bg-white rounded shadow-lg max-w-3xl w-full mx-4 relative">
+      <button id="comprobanteClose" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900 px-3 py-1 rounded">✕</button>
+      <div class="p-4">
+        <img id="comprobanteImage" src="" alt="Comprobante" class="w-full h-auto max-h-[70vh] object-contain rounded" />
+      </div>
+    </div>
+  </div>
+  
+</body>
+
+</html>

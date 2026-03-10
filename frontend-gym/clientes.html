@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clientes | Gym</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-storage-compat.js"></script>
+//Configurar api de firebase
+  <script>
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: "",
+      measurementId: ""
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+  </script>
+</head>
+
+<body class="min-h-screen bg-gray-100 flex">
+
+  <!-- OVERLAY (solo móvil) -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+  <!-- SIDEBAR (desktop visible / móvil hamburguesa) -->
+  <aside id="sidebar"
+    class="w-64 bg-slate-900 text-white
+           fixed md:static inset-y-0 left-0 z-50
+           transform -translate-x-full md:translate-x-0
+           transition-transform duration-300 ease-in-out">
+
+    <div class="p-4 bg-slate-950 text-lg font-bold">
+      Sistema GYM
+    </div>
+
+    <nav class="px-2 py-4 text-sm space-y-1">
+      <a href="dashboard.html" data-module="dashboard" class="block px-3 py-2 rounded hover:bg-slate-700">🏠 Inicio</a>
+      
+      <!-- CLIENTES (DESPLEGABLE) -->
+      <button id="clientesToggle" type="button" aria-controls="clientesSubmenu" aria-expanded="true"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded bg-blue-600 hover:bg-slate-700">
+        <span data-module="clientes" class="flex-1 flex items-center gap-2">👥 Gestionar Clientes</span>
+        <span id="clientesChevron" class="transition-transform duration-200 rotate-180">▾</span>
+      </button>
+
+      <div id="clientesSubmenu" class="mt-1 space-y-1 pl-6">
+        <a href="clientes.html" data-module="clientes" class="block px-3 py-2 rounded hover:bg-slate-700">
+          Listar/Agregar Clientes
+        </a>
+        <span
+          class="block px-3 py-2 rounded text-slate-300 cursor-not-allowed opacity-80"
+          title="Abre el detalle desde Acciones en la tabla de clientes">
+          Detalle de cliente
+        </span>
+        <a href="clientes_vencimientos.html" data-module="clientes_vencimientos" class="block px-3 py-2 rounded hover:bg-slate-700">
+          Vencimientos
+        </a>
+      </div>
+
+      <a href="membresias.html" data-module="membresias" class="block px-3 py-2 rounded hover:bg-slate-700">💳 Membresías</a>
+
+      <a href="usuarios.html" data-module="usuarios" class="block px-3 py-2 rounded hover:bg-slate-700">⚙️ Usuarios</a>
+      <a href="reportes.html" data-module="reportes" class="block px-3 py-2 rounded hover:bg-slate-700">📈 Reportes</a>
+    </nav>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <div class="flex-1 flex flex-col">
+
+    <!-- TOPBAR -->
+    <nav class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b">
+      <div class="w-full flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-3">
+          <button id="menuBtn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded hover:bg-gray-100" aria-label="Abrir menú">☰</button>
+          <span id="currentUserDisplay" class="text-sm text-gray-700"></span>
+        </div>
+
+        <div class="flex items-center">
+          <button id="logoutBtn" class="w-auto inline-flex items-center justify-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 md:py-1 rounded text-sm">Cerrar sesión</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="w-full max-w-none px-4 py-8 pt-2">
+      <!-- Título y acciones -->
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-semibold">Lista de Clientes</h2>
+        <button
+          id="nuevoClienteBtn"
+          type="button"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+          Nuevo cliente
+        </button>
+      </div>
+
+      <!-- Error general -->
+      <div id="clientesError" class="hidden mb-4 bg-red-100 text-red-700 px-4 py-2 rounded"></div>
+
+      <!-- GRID PRINCIPAL -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Columna 1: Card formulario -->
+        <div id="formCol" class="md:col-span-1">
+          <div id="nuevoClienteCard" class="bg-white rounded-xl shadow p-4 mb-6 hidden">
+            <h3 class="text-lg font-semibold mb-3">Registrar nuevo cliente</h3>
+
+            <form id="clienteForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- ... TODO tu formulario igual (sin cambios) ... -->
+
+              <!-- Nombre -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="nombreCliente">Nombres</label>
+                <input type="text" id="nombreCliente"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+              </div>
+
+              <!-- Apellido -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="apellidoCliente">Apellidos</label>
+                <input type="text" id="apellidoCliente"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+              </div>
+
+              <!-- Cédula -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="cedula">Cédula de identidad</label>
+                <input type="text" id="cedula" maxlength="10" inputmode="numeric" pattern="\d*"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+                <p id="cedulaHelp" class="text-xs text-gray-500 mt-1 hidden">Debe ingresar 10 dígitos.</p>
+                <p id="cedulaError" class="text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+
+              <!-- Teléfono -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="telefono">Teléfono</label>
+                <input type="text" id="telefono" maxlength="10" inputmode="numeric" pattern="\d*"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+                <p id="telefonoHelp" class="text-xs text-gray-500 mt-1 hidden">Debe ingresar 10 dígitos.</p>
+                <p id="telefonoError" class="text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+
+              <!-- Dirección -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium mb-1" for="direccion">Dirección</label>
+                <input type="text" id="direccion"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+              </div>
+
+              <!-- Correo -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="correoCliente">Correo</label>
+                <input type="email" id="correoCliente"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+                <p id="correoHelp" class="text-xs text-gray-500 mt-1 hidden">Ingrese un correo válido (ej: usuario@dominio.com).</p>
+                <p id="correoError" class="text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+
+              <!-- Fecha nacimiento -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="fechaNacimiento">Fecha de nacimiento</label>
+                <input type="date" id="fechaNacimiento"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required />
+              </div>
+
+              <!-- Peso -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="peso">Peso (kg)</label>
+                <input type="number" step="0.01" id="peso"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400" />
+              </div>
+
+              <!-- Altura -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="altura">Altura (m)</label>
+                <input type="number" step="0.01" id="altura"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400" />
+              </div>
+
+              <!-- Condición médica -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium mb-1" for="condicionMedica">Condición médica (opcional)</label>
+                <textarea id="condicionMedica" rows="2"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"></textarea>
+              </div>
+
+              <!-- Membresía -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="membresiaSelect">Membresía</label>
+                <select id="membresiaSelect"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required>
+                  <option value="">Seleccione una membresía...</option>
+                </select>
+              </div>
+
+              <!-- Tipo de pago -->
+              <div>
+                <label class="block text-sm font-medium mb-1" for="tipoPagoCliente">Tipo de pago</label>
+                <select id="tipoPagoCliente"
+                  class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
+                  required>
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transferencia">Transferencia</option>
+                </select>
+              </div>
+
+              <!-- Comprobante -->
+              <div id="comprobanteWrapperCliente" class="hidden md:col-span-2">
+                <label class="block text-sm font-medium mb-1" for="comprobanteArchivoCliente">Comprobante de transferencia (imagen)</label>
+                <input type="file" id="comprobanteArchivoCliente" accept="image/*" class="w-full text-sm" />
+              </div>
+
+              <!-- Botones -->
+              <div class="md:col-span-2 flex justify-end gap-2 mt-2">
+                <button type="button" id="cancelarClienteBtn"
+                  class="px-4 py-2 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-100">
+                  Cancelar
+                </button>
+                <button type="submit" id="guardarClienteBtn"
+                  class="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700">
+                  Guardar cliente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Columna tabla -->
+        <div id="tableCol" class="md:col-span-2 w-full">
+          <!-- ... tu tabla igual ... -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+            <div class="flex flex-col sm:flex-row gap-2 w-full">
+              <input
+                type="text"
+                id="buscarInput"
+                placeholder="Buscar por nombre, cédula o correo..."
+                class="border rounded px-3 py-1 w-full max-w-sm text-sm focus:outline-none focus:ring focus:border-blue-400"
+              />
+              <select id="filtroEstadoMembresia"
+                class="border rounded px-3 py-1 text-sm w-full sm:w-52 focus:outline-none focus:ring focus:border-blue-400">
+                <option value="all">Todos</option>
+                <option value="activo">Activos (vigentes)</option>
+                <option value="inactivo">Inactivos (caducados)</option>
+              </select>
+            </div>
+            <span id="clientesCountLabel" class="text-sm text-gray-500"></span>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full table-auto text-sm">
+              <thead>
+                <tr class="border-b bg-gray-50">
+                  <th class="text-left px-3 py-2">Nombre</th>
+                  <th class="text-left px-3 py-2">Cédula</th>
+                  <th class="text-left px-3 py-2">Correo</th>
+                  <th class="text-left px-3 py-2">Teléfono</th>
+                  <th class="text-left px-3 py-2">Membresía</th>
+                  <th class="text-left px-3 py-2">Estado</th>
+                  <th class="text-left px-3 py-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clientesBody"></tbody>
+            </table>
+
+            <div class="mt-4 flex items-center gap-3">
+              <button id="btnCargarMas"
+                class="px-4 py-2 rounded bg-slate-900 text-white hover:bg-slate-800 text-sm">
+                Cargar más
+              </button>
+              <span id="clientesCount" class="text-sm text-gray-600"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="js/config.js"></script>
+  <script src="js/loader.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/auth_guard.js"></script>
+  <script>
+    guardPage(['admin', 'recepcionista', 'entrenador']);
+  </script>
+  <script src="js/clientes.js"></script>
+
+  <!-- JS menú hamburguesa -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuBtn = document.getElementById('menuBtn');
+
+    function openMenu() {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeMenu() {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    menuBtn.addEventListener('click', () => {
+      const isClosed = sidebar.classList.contains('-translate-x-full');
+      isClosed ? openMenu() : closeMenu();
+    });
+
+    overlay.addEventListener('click', closeMenu);
+
+    sidebar.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth < 768) closeMenu();
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) {
+        overlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        sidebar.classList.remove('-translate-x-full');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+      }
+    });
+
+    window.dispatchEvent(new Event('resize'));
+
+    const clientesToggle = document.getElementById('clientesToggle');
+    const clientesSubmenu = document.getElementById('clientesSubmenu');
+    const clientesChevron = document.getElementById('clientesChevron');
+
+    if (clientesToggle) {
+      clientesToggle.addEventListener('click', () => {
+        const isExpanded = clientesToggle.getAttribute('aria-expanded') === 'true';
+        clientesToggle.setAttribute('aria-expanded', !isExpanded);
+        clientesSubmenu.classList.toggle('hidden');
+        clientesChevron.classList.toggle('rotate-180');
+      });
+    }
+  </script>
+
+  <!-- ✅ AJUSTE FINAL: layout + texto + volver al estado inicial después de guardar -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('nuevoClienteBtn');
+    const card = document.getElementById('nuevoClienteCard');
+    const formCol = document.getElementById('formCol');
+    const tableCol = document.getElementById('tableCol');
+    const cancelarBtn = document.getElementById('cancelarClienteBtn');
+
+    if (!btn || !card || !formCol || !tableCol) return;
+
+    function aplicarLayoutYTexto() {
+      const oculto = card.classList.contains('hidden');
+
+      if (oculto) {
+        formCol.classList.add('md:hidden');       // no deja espacio vacío en escritorio
+        tableCol.classList.remove('md:col-span-2');
+        tableCol.classList.add('md:col-span-3');  // tabla full en escritorio
+        btn.textContent = 'Nuevo cliente';
+      } else {
+        formCol.classList.remove('md:hidden');
+        tableCol.classList.remove('md:col-span-3');
+        tableCol.classList.add('md:col-span-2');
+        btn.textContent = 'Ocultar Formulario';
+      }
+    }
+
+    // ✅ FUNCIÓN GLOBAL: deja la página como si se recargó (sin recargar)
+    window.resetClientesVista = function () {
+      card.classList.add('hidden');
+      formCol.classList.add('md:hidden');
+      tableCol.classList.remove('md:col-span-2');
+      tableCol.classList.add('md:col-span-3');
+      btn.textContent = 'Nuevo cliente';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Estado inicial al cargar
+    window.resetClientesVista();
+
+    // Después de que tu clientes.js haga toggle, ajustamos layout/texto
+    btn.addEventListener('click', () => setTimeout(aplicarLayoutYTexto, 0));
+    cancelarBtn?.addEventListener('click', () => setTimeout(aplicarLayoutYTexto, 0));
+
+    // Por si clientes.js oculta el card por su cuenta
+    window.addEventListener('resize', aplicarLayoutYTexto);
+  });
+</script>
+
+</body>
+</html>

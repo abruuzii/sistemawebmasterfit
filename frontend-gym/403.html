@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>No autorizado</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+  <div class="max-w-md w-full bg-white rounded-xl shadow p-6">
+    <h1 class="text-xl font-bold text-red-600">Acceso no autorizado</h1>
+    <p class="mt-2 text-gray-700">
+      Tu rol no tiene permisos para ver esta página.
+    </p>
+    <div class="mt-4 flex gap-2">
+      <button id="backBtn" class="px-4 py-2 rounded bg-blue-600 text-white">Volver</button>
+      <a href="login.html" class="px-4 py-2 rounded bg-gray-200">Cambiar usuario</a>
+    </div>
+  </div>
+  <script>
+    // Botón volver: usa la última página segura guardada
+    (function () {
+      const backBtn = document.getElementById('backBtn');
+      if (!backBtn) return;
+      backBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        try {
+          // Intenta usar la última página segura guardada
+          const lastSafePage = localStorage.getItem('lastSafePage');
+          if (lastSafePage && lastSafePage !== '') {
+            localStorage.removeItem('lastSafePage');
+            window.location.href = lastSafePage;
+          } else {
+            // Si no hay, usa dashboard como fallback
+            window.location.href = 'dashboard.html';
+          }
+        } catch (err) {
+          window.location.href = 'dashboard.html';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

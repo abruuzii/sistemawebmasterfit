@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Test Roles</title>
+  <script src="js/config.js"></script>
+  <style>
+    body { font-family: Arial; padding: 16px; }
+    button { margin: 6px 0; padding: 10px 12px; }
+    pre { background: #111; color: #0f0; padding: 12px; border-radius: 8px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <h2>Test Roles (sin Postman)</h2>
+  <p>Usa el token guardado en localStorage. (authToken / token / access_token)</p>
+
+  <button onclick="callApi('/usuarios')">GET /usuarios (solo admin)</button>
+  <button onclick="callApi('/dashboard/resumen')">GET /dashboard/resumen (admin + recep)</button>
+  <button onclick="callApi('/clientes')">GET /clientes (admin + recep + entrenador)</button>
+
+  <button onclick="createUser()">POST /usuarios (solo admin)</button>
+  <button onclick="createCliente()">POST /clientes (admin + recep)</button>
+
+  <h3>Respuesta</h3>
+  <pre id="out">-</pre>
+
+<script>
+  const out = document.getElementById('out');
+
+  function getToken() {
+    return localStorage.getItem('authToken')
+      || localStorage.getItem('token')
+      || localStorage.getItem('access_token');
+  }
+
+  async function callApi(path) {
+    const token = getToken();
+    out.textContent = 'Cargando...';
+
+    const resp = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json'
+      }
+    });
+
+    const text = await resp.text(); // así vemos aunque sea HTML
+    out.textContent = `STATUS: ${resp.status}\n\n${text}`;
+  }
+
+  async function createUser() {
+    const token = getToken();
+    out.textContent = 'Cargando...';
+    const payload = {
+      nombre: "Test",
+      apellido: "Role",
+      email: `testrole_${Date.now()}@correo.com`,
+      usuario: `testrole_${Date.now()}`,
+      password: "12345678",
+      rol: "entrenador"
+    };
+
+    const resp = await fetch(`${API_BASE_URL}/usuarios`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await resp.text();
+    out.textContent = `STATUS: ${resp.status}\n\n${text}`;
+  }
+
+  async function createCliente() {
+    const token = getToken();
+    out.textContent = 'Cargando...';
+
+    // OJO: ajusta usuario_id y membresia_id a uno que exista en tu BD
+    const payload = {
+      usuario_id: 1,
+      nombre: "Cliente",
+      apellido: "Test",
+      cedula_identidad: String(Math.floor(Math.random()*1e10)).padStart(10,'0'),
+      telefono: "0999999999",
+      direccion: "Ambato",
+      correo: `cliente_${Date.now()}@correo.com`,
+      fecha_nacimiento: "2000-01-01",
+      estado: "activo",
+      peso: 70,
+      altura: 1.70,
+      condicion_medica: "Ninguna",
+      membresia_id: 1
+    };
+
+    const resp = await fetch(`${API_BASE_URL}/clientes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await resp.text();
+    out.textContent = `STATUS: ${resp.status}\n\n${text}`;
+  }
+</script>
+</body>
+</html>

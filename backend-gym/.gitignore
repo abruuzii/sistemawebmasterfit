@@ -1,0 +1,16 @@
+# No subir datos sensibles
+.env
+
+# Evita conflictos de cache generada (no afecta al proyecto)
+phpunit.result.cache
+
+# Evita logs innecesarios
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# Evita archivos de sistema
+.DS_Store
+Thumbs.db
+

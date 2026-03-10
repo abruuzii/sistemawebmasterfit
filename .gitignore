@@ -1,0 +1,13 @@
+# Backend Laravel
+backend-gym/.env
+backend-gym/vendor/
+backend-gym/node_modules/
+
+# Cache/logs
+backend-gym/storage/logs/
+backend-gym/storage/framework/
+backend-gym/bootstrap/cache/
+
+# General
+.DS_Store
+Thumbs.db

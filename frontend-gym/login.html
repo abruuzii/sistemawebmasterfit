@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login | Gym</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex">
+
+  <!-- LADO IZQUIERDO AZUL CON ILUSTRACIÓN -->
+  <div class="hidden md:flex w-1/2 bg-blue-600 items-center justify-center relative overflow-hidden">
+    <div class="absolute -bottom-32 -left-32 w-[300px] h-[300px] bg-white rounded-full opacity-20"></div>
+    <img 
+      src="https://cdn-icons-png.flaticon.com/512/2964/2964514.png" 
+      alt="Gym Illustration"
+      class="w-72 z-10"
+    >
+  </div>
+
+  <!-- LADO DERECHO (FORMULARIO) -->
+  <div class="w-full md:w-1/2 flex items-center justify-center bg-white">
+    <div class="w-full max-w-sm px-8">
+
+      <!-- LOGO / ICONO -->
+      <div class="flex flex-col items-center mb-6">
+        <img 
+          src="https://cdn-icons-png.flaticon.com/512/747/747545.png" 
+          class="w-16 mb-2" 
+          alt="User Icon"
+        >
+        <h1 class="text-2xl font-bold tracking-wide">BIENVENIDO</h1>
+      </div>
+
+      <!-- MENSAJE DE ERROR -->
+      <div id="errorBox" class="hidden mb-4 bg-red-100 text-red-700 px-4 py-2 rounded text-sm"></div>
+
+      <!-- FORMULARIO -->
+      <form id="loginForm" class="space-y-4">
+
+        <div class="relative">
+          <input
+            type="email"
+            id="email"
+            class="w-full border-b-2 border-gray-300 px-10 py-2 focus:outline-none focus:border-blue-500"
+            placeholder="Correo electrónico"
+            required
+          />
+          <span class="absolute left-2 top-2.5 text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.7 0 5-2.29 5-5s-2.3-5-5-5-5 2.29-5 5 2.3 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/>
+            </svg>
+          </span>
+        </div>
+
+        <div class="relative">
+          <input
+            type="password"
+            id="password"
+            class="w-full border-b-2 border-gray-300 px-10 py-2 focus:outline-none focus:border-blue-500"
+            placeholder="Contraseña"
+            required
+          />
+          <span class="absolute left-2 top-2.5 text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-7h-1V7a5 5 0 00-10 0v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2zM9 7a3 3 0 016 0v3H9V7z"/>
+            </svg>
+          </span>
+          <button 
+            type="button"
+            id="togglePassword"
+            class="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <button
+          type="submit"
+          id="loginButton"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-full transition">
+          INICIAR SESIÓN
+        </button>
+
+        <div class="text-center mt-4">
+          <a href="forgot-password.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+<script src="/js/config.js"></script>
+<script src="/js/header.js"></script>
+<script src="/js/auth.js"></script>
+
+
+</body>
+</html>
