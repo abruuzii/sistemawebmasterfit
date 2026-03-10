@@ -1,4 +1,4 @@
-# Sistema Web de Gestión de Usuarios, Pagos y Membresías - MasterFit
+# Sistema Web de Gestión de Usuarios, Pagos y Membresías para el gimnasio MasterFit
 
 ## Descripción
 Este proyecto consiste en el desarrollo de un sistema web para la gestión administrativa del gimnasio **MasterFit**, orientado al control de **usuarios, clientes, membresías, pagos y progresos físicos**.  
